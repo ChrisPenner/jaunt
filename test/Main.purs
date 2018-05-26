@@ -62,4 +62,5 @@ main = run [consoleReporter] $ do
     describe "traverses arrays" do
       it "finds each element with []" $ testJson "arr.[]" [1, 2, 3]
       it "finds each nested element with []" $ testJson "nestedArr.[].val" [1, 2, 3]
+      it "finds indexes with .[i]" $ testJson "arr.[0]" 1
 

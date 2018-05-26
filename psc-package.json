@@ -4,11 +4,8 @@
   "source": "https://github.com/purescript/package-sets.git",
   "depends": [
     "spec",
-    "assert",
     "parsing",
     "strings",
-    "foreign-lens",
-    "foreign",
     "either",
     "argonaut",
     "profunctor-lenses",

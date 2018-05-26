@@ -8,11 +8,11 @@ import Data.Argonaut (class EncodeJson, Json, encodeJson, fromArray, fromNumber,
 import Data.Either (Either)
 import Data.StrMap (fromFoldable)
 import Data.Tuple (Tuple(..))
-import Main (crawl)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
+import Traverse (crawl)
 
 exampleJson :: Either String Json
 exampleJson = jsonParser $ """

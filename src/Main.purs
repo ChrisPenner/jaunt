@@ -5,13 +5,14 @@ import Prelude
 import Control.Alt ((<|>))
 import Control.Monad.Eff (Eff)
 import Control.Monad.Eff.Console (CONSOLE, log)
-import Data.Argonaut (Json, _Array, _Object, encodeJson, jsonParser, jsonTrue)
-import Data.Array (some)
+import Data.Argonaut (Json, JArray, _Array, _Object, fromArray, jsonParser, jsonTrue)
+import Data.Array (fromFoldable, some)
 import Data.Either (Either(..))
-import Data.Lens (_Just, preview, to, traversed, (^?), (^..))
+import Data.Foldable (class Foldable)
+import Data.Lens (Traversal', _Just, preview, to, traversed, (^..))
 import Data.Lens.At (at)
 import Data.List (List(Nil), (:))
-import Data.Maybe (Maybe(..))
+import Data.Maybe (Maybe(Just, Nothing))
 import Data.String (fromCharArray)
 import Text.Parsing.Parser (Parser, runParser)
 import Text.Parsing.Parser.Combinators (sepBy1)
@@ -28,10 +29,20 @@ val = case jsonParser """{ "paras": { "thing": [{"a": 1}, {"a": 2}, {"a": 3}] } 
 
 
 followPath :: List Navigator -> Json -> Maybe Json
-followPath (Key key : xs) v = (preview (_Object <<< at key <<< _Just) v) >>= followPath xs
-followPath (Traverse : xs) v = Just <<< encodeJson $ v ^.. _Array <<< traversed <<< to (followPath xs) <<< _Just
-followPath Nil v = Just v
-{-- followPath _ _ = Nothing --}
+followPath (Key key : xs) v = do
+  next <- preview (atKey key) v 
+  followPath xs next
+followPath (Traverse : xs) v = pure <<< toArray $ v ^.. traverseArray <<< to (followPath xs) <<< traversed
+followPath Nil v = pure v
+
+toArray :: forall f. Foldable f => f Json -> Json
+toArray = fromArray <<< fromFoldable
+
+atKey :: String -> Traversal' Json Json
+atKey key = _Object <<< at key <<< _Just
+
+traverseArray :: Traversal' Json Json
+traverseArray = _Array <<< traversed
 
 crawl :: String -> Json -> Maybe Json
 crawl path json = do

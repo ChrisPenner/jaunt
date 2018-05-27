@@ -54,17 +54,20 @@ main = run [consoleReporter] $ do
   describe "crawl" do
 
     describe "handles single paths" do
-      it "finds strings" $ testJson "str" ["Hello"]
-      it "finds numbers" $ testJson "num" [123]
-      it "finds arrays" $ testJson "arr" [[1, 2, 3]]
-      it "finds objects" $ testJson "obj" [(fromFoldable [Tuple "a" 1])]
+      it "finds strings" $ testJson ".str" ["Hello"]
+      it "finds numbers" $ testJson ".num" [123]
+      it "finds arrays" $ testJson ".arr" [[1, 2, 3]]
+      it "finds objects" $ testJson ".obj" [(fromFoldable [Tuple "a" 1])]
 
     describe "dives into objects" do
-      it "finds properties with ." $ testJson "obj.a" [1]
-      it "finds nested properties with . chains" $ testJson "nested.deep.val" [42]
+      it "finds properties with ." $ testJson ".obj.a" [1]
+      it "finds nested properties with . chains" $ testJson ".nested.deep.val" [42]
 
     describe "traverses arrays" do
-      it "finds each element with []" $ testJson "arr.[]" [1, 2, 3]
-      it "finds each nested element with []" $ testJson "nestedArr.[].val" [1, 2, 3]
-      it "finds indexes with .[i]" $ testJson "arr.[0]" [1]
+      it "finds each element with []" $ testJson ".arr.[]" [1, 2, 3]
+      it "finds each nested element with []" $ testJson ".nestedArr.[].val" [1, 2, 3]
+      it "finds indexes with .[i]" $ testJson ".arr.[0]" [1]
+  describe "build" do
+    it "builds arrays" $ testJson "[ .str ]" [ "Hello" ]
+
 

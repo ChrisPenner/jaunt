@@ -11,11 +11,12 @@ import Data.Lens.At (at)
 import Data.Lens.Index (ix)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), maybe)
-import Navigate (Navigator(..))
-import Parse (parsePath)
+import Data.Traversable (traverse)
+import Navigate (Builder(..), Navigator(..), Path)
+import Parse (parseExpr)
 
 followPath :: List Navigator -> Json -> Either String (List Json)
-followPath (Key key : xs) v = let err = Left ("couldn't find " <> key)
+followPath (Key key : xs) v = let err = Left ("couldn't find (" <> key <> ") in " <> show v)
                                   result = preview (atKey key) v
                                in (err `maybe` followPath xs) result
 followPath (Traverse : xs) v = pure $ v ^.. traverseArray <<< to (followPath xs) <<< _Right <<< traversed
@@ -34,8 +35,11 @@ atKey key = _Object <<< at key <<< _Just
 traverseArray :: Traversal' Json Json
 traverseArray = _Array <<< traversed
 
+runBuilder :: Builder Path -> Json -> Either String (List Json)
+runBuilder (BNode path) json = followPath path json
+runBuilder (BList paths) json = join <$> traverse (\path -> runBuilder path json) paths 
+
 crawl :: String -> Json -> Either String (List Json)
 crawl path json = do
-  p <- parsePath path
-  followPath p json
-
+  p <- parseExpr path
+  runBuilder p json

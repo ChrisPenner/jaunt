@@ -10,6 +10,6 @@ data Navigator = Key String | Traverse | Index Int
 
 type Path = List Navigator
 
-data Builder a = BList (List (Builder a)) | BObject (StrMap (Builder a)) | BNode a
+data Builder a = BPipes (List (Builder a)) | BList (List (Builder a)) | BObject (StrMap (Builder a)) | BVal a
 
 derive instance functorBuilder :: Functor Builder

@@ -35,10 +35,18 @@ atKey key = _Object <<< at key <<< _Just
 traverseArray :: Traversal' Json Json
 traverseArray = _Array <<< traversed
 
+joinResults :: forall a f m. Functor f => Monad m => f (m (m a)) -> f (m a)
+joinResults = map join
+
 runBuilder :: Builder Path -> Json -> Either String (List Json)
-runBuilder (BNode path) json = followPath path json
-runBuilder (BList paths) json = join <$> traverse (\path -> runBuilder path json) paths 
-runBuilder (BObject obj) json =  map fromObject <<< sequence <$> traverse (\path -> runBuilder path json) obj
+runBuilder (BVal path) json = followPath path json
+runBuilder (BList paths) json = map (pure <<< fromArray <<< fromFoldable) <<< joinResults $ traverse (\path -> runBuilder path json) paths
+runBuilder (BObject obj) json = map fromObject <<< sequence <$>
+                                traverse (\path -> runBuilder path json) obj
+runBuilder (BPipes (expr : rest)) json = do
+  results <- runBuilder expr json
+  joinResults $ traverse (runBuilder (BPipes rest)) results
+runBuilder (BPipes Nil) json = pure <<< pure $ json
 
 crawl :: String -> Json -> Either String (List Json)
 crawl path json = do

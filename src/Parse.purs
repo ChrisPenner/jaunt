@@ -19,6 +19,8 @@ import Text.Parsing.Parser.Combinators (between, sepBy1, try) as P
 import Text.Parsing.Parser.Combinators (sepBy)
 import Text.Parsing.Parser.String (char, noneOf, string, whiteSpace)
 
+type ExprP = Parser String (Builder Path)
+
 lchar :: Char -> Parser String Char
 lchar = lexeme <<< char
 
@@ -47,29 +49,32 @@ indexerP = do
        Just n -> pure $ Index n
        Nothing -> fail $ "expected number between [], got: " <> digits
 
-pathP :: Parser String (Builder Path)
-pathP = BNode <$> do
+pathP :: ExprP
+pathP = BVal <$> do
   _ <- lchar '.'
   sepBy (P.try traverserP <|> indexerP <|> (Key <$> keyP)) (lchar '.')
 
 parseExpr :: String -> Either String (Builder Path)
 parseExpr path = lmap parseErrorMessage $ runParser path exprP
 
-listBuilderP :: Parser String (Builder Path)
+listBuilderP :: ExprP
 listBuilderP = BList <$> inSquares (pathP `sepBy` lchar ',')
 
-keyValP :: Parser String (Builder Path) -> Parser String (Tuple String (Builder Path))
+keyValP :: ExprP -> Parser String (Tuple String (Builder Path))
 keyValP exprP' = do
-  key <- keyP 
+  key <- keyP
   _ <- lchar ':'
   val <- exprP'
   pure (Tuple key val)
 
-objectBuilderP :: Parser String (Builder Path) -> Parser String (Builder Path)
-objectBuilderP exprP' = BObject <<< SM.fromFoldable <$> inBraces (keyValP exprP' `sepBy` lchar ',')
+objectBuilderP :: ExprP -> ExprP
+objectBuilderP exprP' = BObject <<< SM.fromFoldable <$>
+                        inBraces (keyValP exprP' `sepBy` lchar ',')
 
-exprP :: Parser String (Builder Path)
-exprP = fix $ \p -> listBuilderP <|> objectBuilderP p <|> pathP
+exprP :: ExprP
+exprP = fix $ \p -> do
+  filters <- (listBuilderP <|> objectBuilderP p <|> pathP) `sepBy` lchar '|'
+  pure $ BPipes filters
 
 lexeme :: forall a. Parser String a -> Parser String a
 lexeme p = p <* whiteSpace

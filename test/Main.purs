@@ -68,6 +68,11 @@ main = run [consoleReporter] $ do
       it "finds each nested element with []" $ testJson ".nestedArr.[].val" [1, 2, 3]
       it "finds indexes with .[i]" $ testJson ".arr.[0]" [1]
   describe "build" do
-    it "builds arrays" $ testJson "[ .str ]" [ "Hello" ]
+    describe "arrays" do
+      it "using a path" $ testJson "[ .str ]" [ "Hello" ]
+      it "using nested paths" $ testJson "[ .nested.deep.val ]" [ 42 ]
+      it "using multiple paths" $ testJson "[ .nested.deep.val, .obj.a ]" [ 42, 1 ]
+    describe "objects" do
+      it "using a simple path" $ testJson "{ result: .str }" [(fromFoldable [Tuple "result" "Hello"])]
 
 

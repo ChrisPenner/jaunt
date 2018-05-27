@@ -2,7 +2,7 @@ module Traverse where
 
 import Prelude
 
-import Data.Argonaut (Json, _Array, _Object, fromArray)
+import Data.Argonaut (Json, _Array, _Object, fromArray, fromObject)
 import Data.Array (fromFoldable)
 import Data.Either (Either(..))
 import Data.Foldable (class Foldable)
@@ -11,7 +11,7 @@ import Data.Lens.At (at)
 import Data.Lens.Index (ix)
 import Data.List (List(..), (:))
 import Data.Maybe (Maybe(..), maybe)
-import Data.Traversable (traverse)
+import Data.Traversable (sequence, traverse)
 import Navigate (Builder(..), Navigator(..), Path)
 import Parse (parseExpr)
 
@@ -38,6 +38,7 @@ traverseArray = _Array <<< traversed
 runBuilder :: Builder Path -> Json -> Either String (List Json)
 runBuilder (BNode path) json = followPath path json
 runBuilder (BList paths) json = join <$> traverse (\path -> runBuilder path json) paths 
+runBuilder (BObject obj) json =  map fromObject <<< sequence <$> traverse (\path -> runBuilder path json) obj
 
 crawl :: String -> Json -> Either String (List Json)
 crawl path json = do

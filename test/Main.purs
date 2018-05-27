@@ -5,10 +5,12 @@ import Prelude
 import Control.Monad.Aff (Aff)
 import Control.Monad.Eff (Eff, kind Effect)
 import Data.Argonaut (class EncodeJson, Json, encodeJson, fromArray, fromNumber, fromString, jsonParser)
-import Data.Either (Either)
+import Data.Either (Either(..))
 import Data.List (fromFoldable) as L
 import Data.StrMap (fromFoldable)
 import Data.Tuple (Tuple(..))
+import Navigate (Builder, Path)
+import Parse (parseExpr)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
@@ -44,6 +46,9 @@ exampleJson = """
 }
 """
 
+testParse :: String -> Builder Path -> _
+testParse str expected = parseExpr str `shouldEqual` Right expected
+
 testJson :: forall a. EncodeJson a => String -> Array a -> _
 testJson = testSpecificJson exampleJson
 
@@ -55,6 +60,12 @@ testSpecificJson jsonString path expected =
 
 main :: Eff (RunnerEffects ()) Unit
 main = run [consoleReporter] $ do
+  describe "parser" do
+
+    describe "indexer" do
+      it "should parse slices" $ parseExpr ".[1:2]"
+
+
   describe "crawl" do
 
     describe "handles single paths" do
@@ -80,9 +91,8 @@ main = run [consoleReporter] $ do
     {-- describe "optional params" do --}
       {-- it "should not error if missing" $ testJson ".missing?" ([] :: Array Json) --}
 
-    {-- describe "array slices" do --}
-      {-- it "should return slice from array" $ testJson ".arr[1:2]" [2, 3] --}
-
+    describe "array slices" do
+      it "should return slice from array" $ testJson ".arr[1:2]" [[2, 3]]
 
     {-- describe "multiple top-level filters separated by ','" do --}
       {-- it "should return slice from array" $ testJson ".str, .num" [fromString "Hello", fromNum 123.0] --}

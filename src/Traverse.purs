@@ -6,10 +6,11 @@ import Data.Argonaut (Json, _Array, _Object, fromArray, fromObject)
 import Data.Array (fromFoldable)
 import Data.Either (Either(..))
 import Data.Foldable (class Foldable)
-import Data.Lens (Traversal', _Just, _Right, preview, to, traversed, (^..), (^?))
+import Data.Lens (Traversal', _Just, _Right, elementsOf, preview, to, traversed, (^..), (^?))
 import Data.Lens.At (at)
 import Data.Lens.Index (ix)
-import Data.List (List(..), (:))
+import Data.Lens.Indexed (positions)
+import Data.List (List(..), drop, take, (:))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Traversable (sequence, traverse)
 import Navigate (Builder(..), Navigator(..), Path)
@@ -24,7 +25,13 @@ followPath (Index n : xs) v = do
   case v ^? _Array <<< ix n of
        Nothing -> Left $ "index " <> show n <> " is out of bounds"
        Just v' -> followPath xs v'
+followPath (Slice start end : xs) v = Left $ show v
+  {-- let elems = getSlice start end $ v ^.. _Array <<< traversed --}
+   {-- in followPath xs (fromArray <<< fromFoldable $ elems) --}
 followPath Nil v = pure <<< pure $ v
+
+getSlice :: forall a. Int -> Int -> List a -> List a
+getSlice start end = take ((end - start) + 1) <<< drop start
 
 toArray :: List Json -> Json
 toArray = fromArray <<< fromFoldable

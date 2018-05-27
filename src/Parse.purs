@@ -16,8 +16,9 @@ import Data.Tuple (Tuple(..))
 import Navigate (Builder(..), Navigator(..), Path)
 import Text.Parsing.Parser (Parser, fail, parseErrorMessage, runParser)
 import Text.Parsing.Parser.Combinators (between, sepBy1, try) as P
-import Text.Parsing.Parser.Combinators (sepBy)
+import Text.Parsing.Parser.Combinators (option, optionMaybe, sepBy)
 import Text.Parsing.Parser.String (char, noneOf, string, whiteSpace)
+import Text.Parsing.Parser.Token (digit)
 
 type ExprP = Parser String (Builder Path)
 
@@ -27,6 +28,7 @@ lchar = lexeme <<< char
 ignoreChars :: Array Char
 ignoreChars = [' ', '\t', '\n']
 
+specialChars :: Array Char
 specialChars = ['.', '[', ']', '"', '\'', ',', ':']
 
 keyP :: Parser String String
@@ -41,13 +43,23 @@ inSquares = lexeme <<< P.between (lchar '[') (lchar ']') <<< lexeme
 inBraces :: forall a. Parser String a -> Parser String a
 inBraces = lexeme <<< P.between (lchar '{') (lchar '}') <<< lexeme
 
+intP :: Parser String Int
+intP = lexeme do
+  digits <- fromCharArray <$> some digit
+  case Int.fromString digits of
+       Just n -> pure n
+       Nothing -> fail $ "expected number between [], got: " <> digits
 
 indexerP :: Parser String Navigator
-indexerP = do
-  digits <- inSquares (fromCharArray <$> some (noneOf ([']'] <> ignoreChars)))
-  case Int.fromString digits of
-       Just n -> pure $ Index n
-       Nothing -> fail $ "expected number between [], got: " <> digits
+indexerP = inSquares do
+  start <- intP
+  mEnd <- optionMaybe do
+    _ <- lchar ':'
+    intP
+  pure case mEnd of
+       Just end -> Slice start end
+       Nothing -> Index start
+
 
 pathP :: ExprP
 pathP = BVal <$> do

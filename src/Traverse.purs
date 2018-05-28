@@ -22,7 +22,7 @@ followPath (Key key isOptional : xs) v =
                           else Left ("couldn't find (" <> key <> ") in " <> show v)
       result = preview (atKey key) v
    in (err `maybe` followPath xs) result
-followPath (Traverse : xs) v = pure $ v ^.. traverseArray <<< to (followPath xs) <<< _Right <<< traversed
+followPath (Traverse : xs) v = joinResults $ traverse (followPath xs) (v ^.. traverseArray)
 followPath (Index n : xs) v = do
   case v ^? _Array <<< ix n of
        Nothing -> Left $ "index " <> show n <> " is out of bounds"

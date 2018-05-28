@@ -90,6 +90,9 @@ main = run [consoleReporter] $ do
       it "finds each nested element with []" $ testJson ".nestedArr.[].val" [1, 2, 3]
       it "finds indexes with .[i]" $ testJson ".arr.[0]" [1]
 
+      describe "errors" do
+        it "should show errors" $ testErrs "{\"a\": [1, 2]}" ".a.[].missing" "couldn't find (missing) in 1"
+
     describe "pipes" do
       it "passes simple filters" $ testJson ".nested | .deep | .val" [42]
       it "passes complex filters" $ testJson ".nested | [ .deep ] | .[] | { a: { b: .val } } | .a.b " [42]

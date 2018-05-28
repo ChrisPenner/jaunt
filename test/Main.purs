@@ -7,9 +7,10 @@ import Control.Monad.Eff (Eff, kind Effect)
 import Data.Argonaut (class EncodeJson, Json, encodeJson, fromArray, fromNumber, fromString, jsonParser)
 import Data.Either (Either(..))
 import Data.List (fromFoldable) as L
+import Data.Maybe (Maybe(..))
 import Data.StrMap (fromFoldable)
 import Data.Tuple (Tuple(..))
-import Navigate (Builder, Path)
+import Navigate (Builder(..), Navigator(..), Path)
 import Parse (parseExpr)
 import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
@@ -63,7 +64,7 @@ main = run [consoleReporter] $ do
   describe "parser" do
 
     describe "indexer" do
-      it "should parse slices" $ parseExpr ".[1:2]"
+      it "should parse slices" $ (testParse ".[1:2]") (BPipes <<< pure <<<  BVal <<< pure $ Slice (Just 1) (Just 2))
 
 
   describe "crawl" do
@@ -92,7 +93,10 @@ main = run [consoleReporter] $ do
       {-- it "should not error if missing" $ testJson ".missing?" ([] :: Array Json) --}
 
     describe "array slices" do
-      it "should return slice from array" $ testJson ".arr[1:2]" [[2, 3]]
+      it "should return slice from array" $ testJson ".arr.[1:2]" [[2, 3]]
+      it "slices up till end if missing end index" $ testSpecificJson "[1, 2, 3, 4]" ".[2:]" [[3, 4]]
+      it "slices from start if missing start index" $ testSpecificJson "[1, 2, 3, 4]" ".[:2]" [[1, 2, 3]]
+      it "slices whole array if missing both start and end index" $ testSpecificJson "[1, 2, 3, 4]" ".[:]" [[1, 2, 3, 4]]
 
     {-- describe "multiple top-level filters separated by ','" do --}
       {-- it "should return slice from array" $ testJson ".str, .num" [fromString "Hello", fromNum 123.0] --}

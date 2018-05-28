@@ -6,7 +6,7 @@ import Control.Alt ((<|>))
 import Control.Lazy (fix)
 import Data.Array (many, some)
 import Data.Bifunctor (lmap)
-import Data.Either (Either)
+import Data.Either (Either(..))
 import Data.Int (fromString) as Int
 import Data.List (List)
 import Data.Maybe (Maybe(Nothing, Just))
@@ -17,7 +17,7 @@ import Navigate (Builder(..), Navigator(..), Path)
 import Text.Parsing.Parser (Parser, fail, parseErrorMessage, runParser)
 import Text.Parsing.Parser.Combinators (between, sepBy1, try) as P
 import Text.Parsing.Parser.Combinators (option, optionMaybe, sepBy)
-import Text.Parsing.Parser.String (char, noneOf, string, whiteSpace)
+import Text.Parsing.Parser.String (char, eof, noneOf, string, whiteSpace)
 import Text.Parsing.Parser.Token (digit)
 
 type ExprP = Parser String (Builder Path)
@@ -52,13 +52,15 @@ intP = lexeme do
 
 indexerP :: Parser String Navigator
 indexerP = inSquares do
-  start <- intP
-  mEnd <- optionMaybe do
-    _ <- lchar ':'
-    intP
-  pure case mEnd of
-       Just end -> Slice start end
-       Nothing -> Index start
+  mStart <- optionMaybe intP
+  mSlice <- optionMaybe (lchar ':')
+  case mSlice of
+       Nothing -> case mStart of 
+                       Just start -> pure $ Index start
+                       Nothing -> fail "invalid index expression"
+       Just _ -> do
+         mEnd <- optionMaybe intP
+         pure (Slice mStart mEnd)
 
 
 pathP :: ExprP
@@ -67,7 +69,7 @@ pathP = BVal <$> do
   sepBy (P.try traverserP <|> indexerP <|> (Key <$> keyP)) (lchar '.')
 
 parseExpr :: String -> Either String (Builder Path)
-parseExpr path = lmap parseErrorMessage $ runParser path exprP
+parseExpr path = lmap parseErrorMessage $ runParser path (exprP <* eof)
 
 listBuilderP :: ExprP
 listBuilderP = BList <$> inSquares (pathP `sepBy` lchar ',')

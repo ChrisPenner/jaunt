@@ -25,13 +25,16 @@ followPath (Index n : xs) v = do
   case v ^? _Array <<< ix n of
        Nothing -> Left $ "index " <> show n <> " is out of bounds"
        Just v' -> followPath xs v'
-followPath (Slice start end : xs) v = Left $ show v
-  {-- let elems = getSlice start end $ v ^.. _Array <<< traversed --}
-   {-- in followPath xs (fromArray <<< fromFoldable $ elems) --}
+followPath (Slice start end : xs) v =
+  let elems = getSlice start end $ v ^.. _Array <<< traversed
+   in followPath xs (fromArray <<< fromFoldable $ elems)
 followPath Nil v = pure <<< pure $ v
 
-getSlice :: forall a. Int -> Int -> List a -> List a
-getSlice start end = take ((end - start) + 1) <<< drop start
+getSlice :: forall a. Maybe Int -> Maybe Int -> List a -> List a
+getSlice (Just start) (Just end) = take ((end - start) + 1) <<< drop start
+getSlice Nothing (Just end) = take (end + 1)
+getSlice (Just start) Nothing = drop start
+getSlice Nothing Nothing = id
 
 toArray :: List Json -> Json
 toArray = fromArray <<< fromFoldable

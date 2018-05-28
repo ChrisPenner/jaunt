@@ -9,7 +9,7 @@ import Data.Bifunctor (lmap)
 import Data.Either (Either(..))
 import Data.Int (fromString) as Int
 import Data.List (List)
-import Data.Maybe (Maybe(Nothing, Just))
+import Data.Maybe (Maybe(Nothing, Just), isJust)
 import Data.StrMap (fromFoldable) as SM
 import Data.String (fromCharArray)
 import Data.Tuple (Tuple(..))
@@ -29,7 +29,7 @@ ignoreChars :: Array Char
 ignoreChars = [' ', '\t', '\n']
 
 specialChars :: Array Char
-specialChars = ['.', '[', ']', '"', '\'', ',', ':']
+specialChars = ['.', '[', ']', '"', '\'', ',', ':', '?']
 
 keyP :: Parser String String
 keyP = fromCharArray <$> lexeme (some (noneOf (specialChars <> ignoreChars)))
@@ -62,11 +62,16 @@ indexerP = inSquares do
          mEnd <- optionMaybe intP
          pure (Slice mStart mEnd)
 
+keyNav :: Parser String Navigator
+keyNav = do
+  k <- keyP
+  isOptional <- isJust <$> optionMaybe (lchar '?')
+  pure (Key k isOptional)
 
 pathP :: ExprP
 pathP = BVal <$> do
   _ <- lchar '.'
-  sepBy (P.try traverserP <|> indexerP <|> (Key <$> keyP)) (lchar '.')
+  sepBy (P.try traverserP <|> indexerP <|> keyNav) (lchar '.')
 
 parseExpr :: String -> Either String (Builder Path)
 parseExpr path = lmap parseErrorMessage $ runParser path (exprP <* eof)

@@ -9,7 +9,7 @@ import Data.Generic.Rep.Show (genericShow)
 import Data.List (List)
 import Data.Maybe (Maybe)
 import Data.StrMap (StrMap)
-data Navigator = Key String | Traverse | Slice (Maybe Int) (Maybe Int) | Index Int
+data Navigator = Key String Boolean | Traverse | Slice (Maybe Int) (Maybe Int) | Index Int
 
 derive instance genericNavigator :: Generic Navigator _
 instance eqNavigator :: Eq Navigator where

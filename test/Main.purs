@@ -53,6 +53,11 @@ testParse str expected = parseExpr str `shouldEqual` Right expected
 testJson :: forall a. EncodeJson a => String -> Array a -> _
 testJson = testSpecificJson exampleJson
 
+testErrs :: String -> String -> String -> _
+testErrs jsonString path expectedErr =
+  let actual = jsonParser jsonString >>= crawl path
+   in actual `shouldEqual` Left expectedErr
+
 testSpecificJson :: forall a. EncodeJson a => String -> String -> Array a -> _
 testSpecificJson jsonString path expected =
   let actual = jsonParser jsonString >>= crawl path
@@ -89,8 +94,10 @@ main = run [consoleReporter] $ do
       it "passes simple filters" $ testJson ".nested | .deep | .val" [42]
       it "passes complex filters" $ testJson ".nested | [ .deep ] | .[] | { a: { b: .val } } | .a.b " [42]
 
-    {-- describe "optional params" do --}
-      {-- it "should not error if missing" $ testJson ".missing?" ([] :: Array Json) --}
+    describe "optional params" do
+      it "should not error if missing AND optional" $ testJson ".missing?" ([] :: Array Json)
+      it "should not error if missing AND optional AND chained" $ testSpecificJson "{}" ".a?.b?.c?" ([] :: Array Json)
+      it "SHOULD error if missing and NOT optional" $ testErrs "{}" ".missing" "couldn't find (missing) in {}"
 
     describe "array slices" do
       it "should return slice from array" $ testJson ".arr.[1:2]" [[2, 3]]

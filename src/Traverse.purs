@@ -17,9 +17,11 @@ import Navigate (Builder(..), Navigator(..), Path)
 import Parse (parseExpr)
 
 followPath :: List Navigator -> Json -> Either String (List Json)
-followPath (Key key : xs) v = let err = Left ("couldn't find (" <> key <> ") in " <> show v)
-                                  result = preview (atKey key) v
-                               in (err `maybe` followPath xs) result
+followPath (Key key isOptional : xs) v = 
+  let err = if isOptional then Right Nil
+                          else Left ("couldn't find (" <> key <> ") in " <> show v)
+      result = preview (atKey key) v
+   in (err `maybe` followPath xs) result
 followPath (Traverse : xs) v = pure $ v ^.. traverseArray <<< to (followPath xs) <<< _Right <<< traversed
 followPath (Index n : xs) v = do
   case v ^? _Array <<< ix n of

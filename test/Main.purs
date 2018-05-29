@@ -16,7 +16,7 @@ import Test.Spec (describe, it)
 import Test.Spec.Assertions (shouldEqual)
 import Test.Spec.Reporter (consoleReporter)
 import Test.Spec.Runner (RunnerEffects, run)
-import Traverse (crawl)
+import Traverse (crawl, runJaunt)
 
 exampleJson :: String
 exampleJson = """
@@ -55,12 +55,12 @@ testJson = testSpecificJson exampleJson
 
 testErrs :: String -> String -> String -> _
 testErrs jsonString path expectedErr =
-  let actual = jsonParser jsonString >>= crawl path
+  let actual = jsonParser jsonString >>= runJaunt <<< crawl path
    in actual `shouldEqual` Left expectedErr
 
 testSpecificJson :: forall a. EncodeJson a => String -> String -> Array a -> _
 testSpecificJson jsonString path expected =
-  let actual = jsonParser jsonString >>= crawl path
+  let actual = jsonParser jsonString >>= runJaunt <<< crawl path
    in actual `shouldEqual` pure (encodeJson <$> L.fromFoldable expected)
 
 

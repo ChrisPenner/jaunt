@@ -47,7 +47,7 @@ app queryString = do
   jsonText <- (maybe (throw "no stdin") pure mJsonBuffer) >>= B.toString UTF8
   let res = do
         json <- jsonParser jsonText
-        results <- crawl queryString json
+        results <- runJaunt $ crawl queryString json
         pure $ intercalate "\n" (stringify <$> results)
   pure unit
 

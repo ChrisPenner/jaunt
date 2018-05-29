@@ -2,6 +2,7 @@ module Traverse where
 
 import Prelude
 
+import Control.Monad.Except (ExceptT(..))
 import Data.Argonaut (Json, _Array, _Object, fromArray, fromObject)
 import Data.Array (fromFoldable)
 import Data.Either (Either(..))
@@ -15,6 +16,8 @@ import Data.Maybe (Maybe(..), maybe)
 import Data.Traversable (sequence, traverse)
 import Navigate (Builder(..), Navigator(..), Path)
 import Parse (parseExpr)
+
+type JauntM a = ExceptT String List a
 
 followPath :: List Navigator -> Json -> Either String (List Json)
 followPath (Key key isOptional : xs) v = 

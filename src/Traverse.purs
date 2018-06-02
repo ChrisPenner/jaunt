@@ -27,7 +27,7 @@ runJaunt = sequence <<< runExceptT
 followPath :: List Navigator -> Json -> JauntM Json
 followPath (Key key isOptional : xs) v = 
   let err :: JauntM Json
-      err = if isOptional then empty
+      err = if isOptional then lift Nil
                           else throwError ("couldn't find (" <> key <> ") in " <> show v)
       result :: Maybe Json
       result = preview (atKey key) v
@@ -41,7 +41,7 @@ followPath (Index n : xs) v = do
        Just v' -> followPath xs v'
 followPath (Slice start end : xs) v =
   let elems = getSlice start end $ v ^.. _Array <<< traversed
-   in followPath xs (fromArray <<< fromFoldable $ elems)
+   in followPath xs (toJsonArray elems)
 followPath Nil v = pure v
 
 getSlice :: forall a. Maybe Int -> Maybe Int -> List a -> List a
@@ -50,8 +50,8 @@ getSlice Nothing (Just end) = take (end + 1)
 getSlice (Just start) Nothing = drop start
 getSlice Nothing Nothing = id
 
-toArray :: List Json -> Json
-toArray = fromArray <<< fromFoldable
+toJsonArray :: List Json -> Json
+toJsonArray = fromArray <<< fromFoldable
 
 atKey :: String -> Traversal' Json Json
 atKey key = _Object <<< at key <<< _Just
@@ -64,10 +64,8 @@ joinResults = map join
 
 runBuilder :: Builder Path -> Json -> JauntM Json
 runBuilder (BVal path) json = followPath path json
-runBuilder (BList paths) json = do
-  p <- lift paths
-  -- fix this
-  runBuilder p json
+runBuilder (BList paths) json =
+  toJsonArray <$> traverse (flip runBuilder json) paths
 runBuilder (BObject obj) json = fromObject <$> traverse (\path -> runBuilder path json) obj
 runBuilder (BPipes (expr : rest)) json = do
   result <- runBuilder expr json

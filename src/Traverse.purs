@@ -12,7 +12,6 @@ import Data.Foldable (class Foldable)
 import Data.Lens (Traversal', _Just, _Right, elementsOf, preview, to, traversed, (^..), (^?))
 import Data.Lens.At (at)
 import Data.Lens.Index (ix)
-import Data.Lens.Indexed (positions)
 import Data.List (List(..), drop, take, (:))
 import Data.Maybe (Maybe(..), maybe)
 import Data.Traversable (sequence, traverse)
@@ -62,15 +61,15 @@ traverseArray = _Array <<< traversed
 joinResults :: forall a f m. Functor f => Monad m => f (m (m a)) -> f (m a)
 joinResults = map join
 
-runBuilder :: Builder Path -> Json -> JauntM Json
-runBuilder (BVal path) json = followPath path json
-runBuilder (BList paths) json =
-  toJsonArray <$> traverse (flip runBuilder json) paths
-runBuilder (BObject obj) json = fromObject <$> traverse (\path -> runBuilder path json) obj
-runBuilder (BPipes (expr : rest)) json = do
-  result <- runBuilder expr json
-  runBuilder (BPipes rest) result
-runBuilder (BPipes Nil) json = pure json
+runBuilder :: Json -> Builder Path -> JauntM Json
+runBuilder json (BVal path) = followPath path json
+runBuilder json (BList paths) =
+  toJsonArray <$> traverse (runBuilder json) paths
+runBuilder json (BObject obj) = fromObject <$> traverse (runBuilder json) obj
+runBuilder json (BPipes (expr : rest)) = do
+  result <- runBuilder json expr
+  runBuilder result (BPipes rest)
+runBuilder json (BPipes Nil) = pure json
 
 crawl :: String -> Json -> JauntM Json
-crawl path json = either throwError (\p -> runBuilder p json) (parseExpr path)
+crawl path json = either throwError (runBuilder json) (parseExpr path)

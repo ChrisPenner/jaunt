@@ -2,14 +2,12 @@ module Traverse where
 
 import Prelude
 
-import Control.Monad.Except (class MonadError, ExceptT(..), except, runExceptT, throwError)
+import Control.Monad.Except (ExceptT, runExceptT, throwError)
 import Control.Monad.Trans.Class (lift)
-import Control.MonadPlus (empty)
 import Data.Argonaut (Json, _Array, _Object, fromArray, fromObject)
 import Data.Array (fromFoldable)
-import Data.Either (Either(..), either)
-import Data.Foldable (class Foldable)
-import Data.Lens (Traversal', _Just, _Right, elementsOf, preview, to, traversed, (^..), (^?))
+import Data.Either (Either, either)
+import Data.Lens (Traversal', _Just, preview, traversed, (^..), (^?))
 import Data.Lens.At (at)
 import Data.Lens.Index (ix)
 import Data.List (List(..), drop, take, (:))
